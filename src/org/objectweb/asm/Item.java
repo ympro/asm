@@ -250,7 +250,7 @@ final class Item {
         this.longVal = bsmIndex;
         this.strVal1 = name;
         this.strVal2 = desc;
-        this.hashCode = 0x7FFFFFFF & (type + bsmIndex
+        this.hashCode = 0x7FFFFFFF & ((type + bsmIndex)
                 * strVal1.hashCode() * strVal2.hashCode());
     }
 
