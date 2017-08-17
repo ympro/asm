@@ -962,7 +962,7 @@ class MethodWriter extends MethodVisitor {
     public void visitInvokeDynamicInsn(final String name, final String desc,
             final Handle bsm, final Object... bsmArgs) {
         lastCodeOffset = code.length;
-        Item i = cw.newInvokeDynamicItem(name, desc, bsm, bsmArgs);
+        Item i = cw.newDynamicItem(ClassWriter.INDY, name, desc, bsm, bsmArgs);
         int argSize = i.intVal;
         // Label currentBlock = this.currentBlock;
         if (currentBlock != null) {

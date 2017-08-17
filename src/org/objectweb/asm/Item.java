@@ -236,21 +236,21 @@ final class Item {
     }
 
     /**
-     * Sets the item to an InvokeDynamic item.
+     * Sets the item to an InvokeDynamic/ConstantDynamic item.
      * 
      * @param name
-     *            invokedynamic's name.
+     *            invokedynamic / constantdynamic name.
      * @param desc
-     *            invokedynamic's desc.
+     *            invokedynamic / constantdynamic descriptor.
      * @param bsmIndex
      *            zero based index into the class attribute BootrapMethods.
      */
-    void set(String name, String desc, int bsmIndex) {
-        this.type = ClassWriter.INDY;
+    void set(int type, String name, String desc, int bsmIndex) {
+        this.type = type;
         this.longVal = bsmIndex;
         this.strVal1 = name;
         this.strVal2 = desc;
-        this.hashCode = 0x7FFFFFFF & (ClassWriter.INDY + bsmIndex
+        this.hashCode = 0x7FFFFFFF & (type + bsmIndex
                 * strVal1.hashCode() * strVal2.hashCode());
     }
 
@@ -301,7 +301,8 @@ final class Item {
             return i.intVal == intVal && i.strVal1.equals(strVal1);
         case ClassWriter.NAME_TYPE:
             return i.strVal1.equals(strVal1) && i.strVal2.equals(strVal2);
-        case ClassWriter.INDY: {
+        case ClassWriter.INDY:
+        case ClassWriter.CONDY: {
             return i.longVal == longVal && i.strVal1.equals(strVal1)
                     && i.strVal2.equals(strVal2);
         }

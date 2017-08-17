@@ -274,6 +274,11 @@ public class ClassWriter extends ClassVisitor {
     static final int PACKAGE = 20;
     
     /**
+     * The type of CONSTANT_ConstantDynamic constant pool items.
+     */
+    static final int CONDY = 17;
+    
+    /**
      * The base value for all CONSTANT_MethodHandle constant pool items.
      * Internally, ASM store the 9 variations of CONSTANT_MethodHandle into 9
      * different items (from 21 to 29).
@@ -1110,6 +1115,9 @@ public class ClassWriter extends ClassVisitor {
         } else if (cst instanceof Handle) {
             Handle h = (Handle) cst;
             return newHandleItem(h.tag, h.owner, h.name, h.desc, h.itf);
+        } else if (cst instanceof Condy) {
+            Condy c = (Condy) cst;
+            return newDynamicItem(CONDY, c.name, c.desc, c.bsm, c.bsmArgs);
         } else {
             throw new IllegalArgumentException("value " + cst);
         }
@@ -1339,8 +1347,9 @@ public class ClassWriter extends ClassVisitor {
     }
     
     /**
-     * Adds an invokedynamic reference to the constant pool of the class being
-     * build. Does nothing if the constant pool already contains a similar item.
+     * Adds an invokedynamic/constant reference to the constant pool of the
+     * class being build. Does nothing if the constant pool already contains
+     * a similar item.
      * <i>This method is intended for {@link Attribute} sub classes, and is
      * normally not needed by class generators or adapters.</i>
      * 
@@ -1353,16 +1362,26 @@ public class ClassWriter extends ClassVisitor {
      * @param bsmArgs
      *            the bootstrap method constant arguments.
      * 
-     * @return a new or an already existing invokedynamic type reference item.
+     * @return a new or an already existing invokedynamic/constantdynamic
+     *         type reference item.
      */
-    Item newInvokeDynamicItem(final String name, final String desc,
-            final Handle bsm, final Object... bsmArgs) {
+    Item newDynamicItem(final int type, final String name,
+            final String desc, final Handle bsm, final Object... bsmArgs) {
         // cache for performance
         ByteVector bootstrapMethods = this.bootstrapMethods;
         if (bootstrapMethods == null) {
             bootstrapMethods = this.bootstrapMethods = new ByteVector();
         }
 
+        // CONDY can be recursive (and INDY can have CONDY bsm arguments)
+        // so reserve them as constant pool constant first so the call to
+        // newConst() below will only use already existing items
+        // This loop can also stackoverflow if a CONDY reference itself,
+        // let burn into flame at that point
+        for (Object bsmArg: bsmArgs) {
+            newConst(bsmArg);
+        }
+        
         int position = bootstrapMethods.length; // record current position
 
         int hashCode = bsm.hashCode();
@@ -1372,8 +1391,7 @@ public class ClassWriter extends ClassVisitor {
         int argsLength = bsmArgs.length;
         bootstrapMethods.putShort(argsLength);
 
-        for (int i = 0; i < argsLength; i++) {
-            Object bsmArg = bsmArgs[i];
+        for (Object bsmArg: bsmArgs) {
             hashCode ^= bsmArg.hashCode();
             bootstrapMethods.putShort(newConst(bsmArg));
         }
@@ -1411,11 +1429,11 @@ public class ClassWriter extends ClassVisitor {
             put(result);
         }
 
-        // now, create the InvokeDynamic constant
-        key3.set(name, desc, bootstrapMethodIndex);
+        // now, create the InvokeDynamic/ConstantDynamic constant
+        key3.set(type, name, desc, bootstrapMethodIndex);
         result = get(key3);
         if (result == null) {
-            put122(INDY, bootstrapMethodIndex, newNameType(name, desc));
+            put122(type, bootstrapMethodIndex, newNameType(name, desc));
             result = new Item(index++, key3);
             put(result);
         }
@@ -1442,7 +1460,30 @@ public class ClassWriter extends ClassVisitor {
      */
     public int newInvokeDynamic(final String name, final String desc,
             final Handle bsm, final Object... bsmArgs) {
-        return newInvokeDynamicItem(name, desc, bsm, bsmArgs).index;
+        return newDynamicItem(INDY, name, desc, bsm, bsmArgs).index;
+    }
+    
+    /**
+     * Adds a constant dynamic reference to the constant pool of the class being
+     * build. Does nothing if the constant pool already contains a similar item.
+     * <i>This method is intended for {@link Attribute} sub classes, and is
+     * normally not needed by class generators or adapters.</i>
+     * 
+     * @param name
+     *            name of the invoked method.
+     * @param desc
+     *            descriptor of the invoke method.
+     * @param bsm
+     *            the bootstrap method.
+     * @param bsmArgs
+     *            the bootstrap method constant arguments.
+     * 
+     * @return the index of a new or already existing invokedynamic reference
+     *         item.
+     */
+    public int newConstantDynamic(final String name, final String desc,
+            final Handle bsm, final Object... bsmArgs) {
+        return newDynamicItem(INDY, name, desc, bsm, bsmArgs).index;
     }
 
     /**

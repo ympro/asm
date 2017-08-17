@@ -498,8 +498,9 @@ public abstract class MethodVisitor {
      * @param bsmArgs
      *            the bootstrap method constant arguments. Each argument must be
      *            an {@link Integer}, {@link Float}, {@link Long},
-     *            {@link Double}, {@link String}, {@link Type} or {@link Handle}
-     *            value. This method is allowed to modify the content of the
+     *            {@link Double}, {@link String}, {@link Type}, {@link Handle}
+     *            or {@link Condy} value.
+     *            This method is allowed to modify the content of the
      *            array so a caller should expect that this array may change.
      */
     public void visitInvokeDynamicInsn(String name, String desc, Handle bsm,
@@ -576,6 +577,8 @@ public abstract class MethodVisitor {
      *     }
      * } else if (cst instanceof Handle) {
      *     // ...
+     * } else if (cst instanceof Condy) {
+     *     // ...
      * } else {
      *     // throw an exception
      * }
@@ -588,7 +591,8 @@ public abstract class MethodVisitor {
      *            ARRAY sort for <tt>.class</tt> constants, for classes whose
      *            version is 49.0, a {@link Type} of METHOD sort or a
      *            {@link Handle} for MethodType and MethodHandle constants, for
-     *            classes whose version is 51.0.
+     *            classes whose version is 51.0, a {@link Condy} for a constant
+     *            dynamic constant, for classes whose version is 54.0.
      */
     public void visitLdcInsn(Object cst) {
         if (mv != null) {

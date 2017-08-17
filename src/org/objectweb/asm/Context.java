@@ -53,11 +53,6 @@ class Context {
     char[] buffer;
 
     /**
-     * The start index of each bootstrap method.
-     */
-    int[] bootstrapMethods;
-
-    /**
      * The access flags of the method currently being parsed.
      */
     int access;

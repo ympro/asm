@@ -118,7 +118,7 @@ public class ClassReader {
      * converted back to a GOTO_W in ClassWriter cannot occur.
      */
     static final int EXPAND_ASM_INSNS = 256;
-
+    
     /**
      * The class to be parsed. <i>The content of this array must not be
      * modified. This field is intended for {@link Attribute} sub classes, and
@@ -133,15 +133,21 @@ public class ClassReader {
     private final int[] items;
 
     /**
-     * The String objects corresponding to the CONSTANT_Utf8 items. This cache
-     * avoids multiple parsing of a given CONSTANT_Utf8 constant pool item,
-     * which GREATLY improves performances (by a factor 2 to 3). This caching
-     * strategy could be extended to all constant pool items, but its benefit
+     * The cached objects corresponding to the CONSTANT_Utf8 or CONSTANT_Dynamic items.
+     * This cache avoids multiple parsing of a given CONSTANT_Utf8 constant pool item,
+     * which GREATLY improves performances.
+     * This caching strategy could be extended to all constant pool items, but its benefit
      * would not be so great for these items (because they are much less
-     * expensive to parse than CONSTANT_Utf8 items).
+     * expensive to parse than CONSTANT_Utf8 and CONSTANT_Dynamic items).
      */
-    private final String[] strings;
+    private final Object[] cache;
 
+    /**
+     * Cache the start index of each bootstrap method,
+     * used to decode bootstrap method for INDY and CONDY.
+     */
+    int[] bootstrapMethods;
+    
     /**
      * Maximum length of the strings contained in the constant pool of the
      * class.
@@ -187,7 +193,7 @@ public class ClassReader {
         // parses the constant pool
         items = new int[readUnsignedShort(off + 8)];
         int n = items.length;
-        strings = new String[n];
+        cache = new Object[n];
         int max = 0;
         int index = off + 10;
         for (int i = 1; i < n; ++i) {
@@ -201,6 +207,7 @@ public class ClassReader {
             case ClassWriter.FLOAT:
             case ClassWriter.NAME_TYPE:
             case ClassWriter.INDY:
+            case ClassWriter.CONDY:
                 size = 5;
                 break;
             case ClassWriter.LONG:
@@ -338,11 +345,15 @@ public class ClassReader {
                 ++i;
                 break;
             case ClassWriter.UTF8: {
-                String s = strings[i];
-                if (s == null) {
+                Object object = cache[i];
+                String s;
+                if (object == null) {
                     index = items[i];
-                    s = strings[i] = readUTF(index + 2,
+                    s = readUTF(index + 2,
                             readUnsignedShort(index), buf);
+                    cache[i] = s;
+                } else {
+                    s = (String)object;
                 }
                 item.set(tag, s, null, null);
                 break;
@@ -356,11 +367,13 @@ public class ClassReader {
                 break;
             }
             case ClassWriter.INDY:
+            case ClassWriter.CONDY:
                 if (classWriter.bootstrapMethods == null) {
                     copyBootstrapMethods(classWriter, items2, buf);
                 }
                 nameType = items[readUnsignedShort(index + 2)];
-                item.set(readUTF8(nameType, buf), readUTF8(nameType + 2, buf),
+                item.set(tag, readUTF8(nameType, buf),
+                        readUTF8(nameType + 2, buf),
                         readUnsignedShort(index));
                 break;
             // case ClassWriter.STR:
@@ -583,7 +596,7 @@ public class ClassReader {
         int module = 0;
         int packages = 0;
         Attribute attributes = null;
-
+        
         u = getAttributes();
         for (int i = readUnsignedShort(u); i > 0; --i) {
             String attrName = readUTF8(u + 2, c);
@@ -634,7 +647,7 @@ public class ClassReader {
                     bootstrapMethods[j] = v;
                     v += 2 + readUnsignedShort(v + 2) << 1;
                 }
-                context.bootstrapMethods = bootstrapMethods;
+                this.bootstrapMethods = bootstrapMethods;
             } else {
                 Attribute attr = readAttribute(attrs, attrName, u + 8,
                         readInt(u + 4), c, -1, null);
@@ -645,6 +658,8 @@ public class ClassReader {
             }
             u += 6 + readInt(u + 4);
         }
+        
+        
 
         // visits the class declaration
         classVisitor.visit(readInt(items[1] - 7), access, name, signature,
@@ -1625,10 +1640,11 @@ public class ClassReader {
                 mv.visitIntInsn(opcode, readShort(u + 1));
                 u += 3;
                 break;
-            case ClassWriter.LDC_INSN:
+            case ClassWriter.LDC_INSN: {
                 mv.visitLdcInsn(readConst(b[u + 1] & 0xFF, c));
                 u += 2;
                 break;
+            }
             case ClassWriter.LDCW_INSN:
                 mv.visitLdcInsn(readConst(readUnsignedShort(u + 1), c));
                 u += 3;
@@ -1655,7 +1671,7 @@ public class ClassReader {
             }
             case ClassWriter.INDYMETH_INSN: {
                 int cpIndex = items[readUnsignedShort(u + 1)];
-                int bsmIndex = context.bootstrapMethods[readUnsignedShort(cpIndex)];
+                int bsmIndex = bootstrapMethods[readUnsignedShort(cpIndex)];
                 Handle bsm = (Handle) readConst(readUnsignedShort(bsmIndex), c);
                 int bsmArgCount = readUnsignedShort(bsmIndex + 2);
                 Object[] bsmArgs = new Object[bsmArgCount];
@@ -2474,7 +2490,7 @@ public class ClassReader {
         }
         return new Attribute(type).read(this, off, len, null, -1, null);
     }
-
+    
     // ------------------------------------------------------------------------
     // Utility methods: low level parsing
     // ------------------------------------------------------------------------
@@ -2585,6 +2601,45 @@ public class ClassReader {
     }
 
     /**
+     * Reads a constant dynamic constant pool item.
+     * <i>This method is intended for {@link Attribute} sub classes,
+     * and is normally not needed by class generators or adapters.</i>
+     * 
+     * @param item
+     *            
+     * @param buf
+     *            buffer to be used to read the item. This buffer must be
+     *            sufficiently large. It is not automatically resized.
+     * @return the String corresponding to the specified UTF8 item.
+     */
+    public Condy readCondy(final int item, final char[] buf) {
+        Object object = cache[item];
+        if (object != null) {
+            return (Condy)object;
+        }
+        int index = items[item];
+        Condy condy = readCondyRaw(index, buf);
+        cache[item] = condy;
+        return condy;
+    }
+    
+    private Condy readCondyRaw(final int index, final char[] buf) {
+        int bsmIndex = bootstrapMethods[readUnsignedShort(index)];
+        Handle bsm = (Handle) readConst(readUnsignedShort(bsmIndex), buf);
+        int bsmArgCount = readUnsignedShort(bsmIndex + 2);
+        Object[] bsmArgs = new Object[bsmArgCount];
+        bsmIndex += 4;
+        for(int i = 0; i < bsmArgCount; i++) {
+            bsmArgs[i] = readConst(readUnsignedShort(bsmIndex), buf);
+            bsmIndex += 2;
+        }
+        int cpIndex = items[readShort(index+2)];
+        String name = readUTF8(cpIndex, buf);
+        String desc = readUTF8(cpIndex + 2, buf);
+        return new Condy(name, desc, bsm, bsmArgs);
+    }
+    
+    /**
      * Reads an UTF8 string constant pool item in {@link #b b}. <i>This method
      * is intended for {@link Attribute} sub classes, and is normally not needed
      * by class generators or adapters.</i>
@@ -2602,12 +2657,14 @@ public class ClassReader {
         if (index == 0 || item == 0) {
             return null;
         }
-        String s = strings[item];
-        if (s != null) {
-            return s;
+        Object object = cache[item];
+        if (object != null) {
+            return (String)object;
         }
         index = items[item];
-        return strings[item] = readUTF(index + 2, readUnsignedShort(index), buf);
+        String s = readUTF(index + 2, readUnsignedShort(index), buf);
+        cache[item] = s;
+        return s;
     }
 
     /**
@@ -2661,7 +2718,7 @@ public class ClassReader {
 
     /**
      * Read a stringish constant item (CONSTANT_Class, CONSTANT_String,
-     * CONSTANT_MethodType, CONSTANT_Module or CONSTANT_Package
+     * CONSTANT_MethodType, CONSTANT_Module or CONSTANT_Package)
      * @param index
      * @param buf
      * @return
@@ -2755,6 +2812,8 @@ public class ClassReader {
             return readUTF8(index, buf);
         case ClassWriter.MTYPE:
             return Type.getMethodType(readUTF8(index, buf));
+        case ClassWriter.CONDY:
+            return readCondy(item, buf);
         default: // case ClassWriter.HANDLE_BASE + [1..9]:
             int tag = readByte(index);
             int[] items = this.items;
