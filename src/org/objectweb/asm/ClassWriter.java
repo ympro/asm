@@ -1483,7 +1483,7 @@ public class ClassWriter extends ClassVisitor {
      */
     public int newConstantDynamic(final String name, final String desc,
             final Handle bsm, final Object... bsmArgs) {
-        return newDynamicItem(INDY, name, desc, bsm, bsmArgs).index;
+        return newDynamicItem(CONDY, name, desc, bsm, bsmArgs).index;
     }
 
     /**
