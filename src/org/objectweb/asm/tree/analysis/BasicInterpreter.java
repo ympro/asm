@@ -31,6 +31,7 @@ package org.objectweb.asm.tree.analysis;
 
 import java.util.List;
 
+import org.objectweb.asm.Condy;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -141,6 +142,9 @@ public class BasicInterpreter extends Interpreter<BasicValue> implements
             } else if (cst instanceof Handle) {
                 return newValue(Type
                         .getObjectType("java/lang/invoke/MethodHandle"));
+            } else if (cst instanceof Condy) {
+                return newValue(Type
+                        .getType(((Condy)cst).getDesc()));
             } else {
                 throw new IllegalArgumentException("Illegal LDC constant "
                         + cst);
