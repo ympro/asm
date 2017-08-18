@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.objectweb.asm.Condy;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -435,6 +436,8 @@ public class AnalyzerAdapter extends MethodVisitor {
             }
         } else if (cst instanceof Handle) {
             push("java/lang/invoke/MethodHandle");
+        } else if (cst instanceof Condy) {
+            pushDesc(((Condy)cst).getDesc());
         } else {
             throw new IllegalArgumentException();
         }
