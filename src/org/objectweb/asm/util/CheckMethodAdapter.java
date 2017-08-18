@@ -41,6 +41,7 @@ import java.util.Set;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Attribute;
+import org.objectweb.asm.Condy;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -756,8 +757,8 @@ public class CheckMethodAdapter extends MethodVisitor {
             throw new IllegalArgumentException("invalid handle tag "
                     + bsm.getTag());
         }
-        for (int i = 0; i < bsmArgs.length; i++) {
-            checkLDCConstant(bsmArgs[i]);
+        for (Object bsmArg:  bsmArgs) {
+            checkLDCConstant(bsmArg);
         }
         super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
         ++insnCount;
@@ -1170,27 +1171,49 @@ public class CheckMethodAdapter extends MethodVisitor {
     }
 
     void checkLDCConstant(final Object cst) {
+        int v = this.version & 0xFFFF;
         if (cst instanceof Type) {
             int s = ((Type) cst).getSort();
             if (s != Type.OBJECT && s != Type.ARRAY && s != Type.METHOD) {
                 throw new IllegalArgumentException("Illegal LDC constant value");
             }
-            if (s != Type.METHOD && (version & 0xFFFF) < Opcodes.V1_5) {
+            if (s != Type.METHOD && v  < Opcodes.V1_5) {
                 throw new IllegalArgumentException(
-                        "ldc of a constant class requires at least version 1.5");
+                        "a constant class requires at least version 1.5");
             }
-            if (s == Type.METHOD && (version & 0xFFFF) < Opcodes.V1_7) {
+            if (s == Type.METHOD && v < Opcodes.V1_7) {
                 throw new IllegalArgumentException(
-                        "ldc of a method type requires at least version 1.7");
+                        "a method type requires at least version 1.7");
             }
         } else if (cst instanceof Handle) {
-            if ((version & 0xFFFF) < Opcodes.V1_7) {
+            if (v < Opcodes.V1_7) {
                 throw new IllegalArgumentException(
-                        "ldc of a handle requires at least version 1.7");
+                        "a handle requires at least version 1.7");
             }
-            int tag = ((Handle) cst).getTag();
+            Handle handle = (Handle) cst;
+            int tag = handle.getTag();
             if (tag < Opcodes.H_GETFIELD || tag > Opcodes.H_INVOKEINTERFACE) {
                 throw new IllegalArgumentException("invalid handle tag " + tag);
+            }
+            checkInternalName(handle.getOwner(), "handle owner");
+            if (tag <= Opcodes.H_PUTSTATIC) {
+                checkDesc(handle.getDesc(), false);    
+            } else {
+                checkMethodDesc(handle.getDesc());
+            }
+            checkMethodIdentifier(this.version, handle.getName(), "handle name");
+        } else if (cst instanceof Condy) {
+            /*if (v < Opcodes.V1_10) {
+                throw new IllegalArgumentException(
+                        "a constant dynamic requires at least version 10");
+            }*/
+            Condy condy = (Condy)cst;
+            checkMethodIdentifier(this.version, condy.getName(), "constant dynamic name");
+            checkDesc(condy.getDesc(), false);
+            checkLDCConstant(condy.getBsm());
+            Object[] bsmArgs = condy.getBsmArgs();
+            for (Object bsmArg:  bsmArgs) {
+                checkLDCConstant(bsmArg);
             }
         } else {
             checkConstant(cst);
