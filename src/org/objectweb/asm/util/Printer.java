@@ -34,9 +34,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.objectweb.asm.Attribute;
+import org.objectweb.asm.Condy;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 
 /**
@@ -910,7 +912,7 @@ public abstract class Printer {
      * future versions of the Java Virtual Machine. To easily detect new
      * constant types, implementations of this method should check for
      * unexpected constant types, like this:
-     *
+     * 
      * <pre>
      * if (cst instanceof Integer) {
      *     // ...
@@ -935,19 +937,22 @@ public abstract class Printer {
      *     }
      * } else if (cst instanceof Handle) {
      *     // ...
+     * } else if (cst instanceof Condy) {
+     *     // ...
      * } else {
      *     // throw an exception
      * }
      * </pre>
-     *
+     * 
      * @param cst
      *            the constant to be loaded on the stack. This parameter must be
      *            a non null {@link Integer}, a {@link Float}, a {@link Long}, a
-     *            {@link Double}, a {@link String}, a {@link org.objectweb.asm.Type}
-     *            of OBJECT or ARRAY sort for <tt>.class</tt> constants, for classes whose
-     *            version is 49.0, a {@link org.objectweb.asm.Type} of METHOD sort or a
+     *            {@link Double}, a {@link String}, a {@link Type} of OBJECT or
+     *            ARRAY sort for <tt>.class</tt> constants, for classes whose
+     *            version is 49.0, a {@link Type} of METHOD sort or a
      *            {@link Handle} for MethodType and MethodHandle constants, for
-     *            classes whose version is 51.0.
+     *            classes whose version is 51.0, a {@link Condy} for a constant
+     *            dynamic constant, for classes whose version is 54.0.
      */
     public abstract void visitLdcInsn(final Object cst);
 

@@ -36,6 +36,7 @@ import java.util.Map;
 
 import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Condy;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -1265,7 +1266,7 @@ public class ASMifier extends Printer {
      *            an {@link Integer}, {@link Float}, {@link Long},
      *            {@link Double} or {@link String} object. May be <tt>null</tt>.
      */
-    static void appendConstant(final StringBuffer buf, final Object cst) {
+    void appendConstant(final StringBuffer buf, final Object cst) {
         if (cst == null) {
             buf.append("null");
         } else if (cst instanceof String) {
@@ -1283,6 +1284,21 @@ public class ASMifier extends Printer {
             buf.append(h.getName()).append("\", \"");
             buf.append(h.getDesc()).append("\", ");
             buf.append(h.isInterface()).append(")");
+        } else if (cst instanceof Condy) {
+            buf.append("new Condy(\"");
+            Condy c = (Condy) cst;
+            buf.append(c.getName()).append("\", \"");
+            buf.append(c.getDesc()).append("\", ");
+            appendConstant(c.getBsm());
+            buf.append(", new Object[] {");
+            Object[] bsmArgs = c.getBsmArgs();
+            for (int i = 0; i < bsmArgs.length; ++i) {
+                appendConstant(bsmArgs[i]);
+                if (i != bsmArgs.length - 1) {
+                    buf.append(", ");
+                }
+            }
+            buf.append("})");
         } else if (cst instanceof Byte) {
             buf.append("new Byte((byte)").append(cst).append(')');
         } else if (cst instanceof Boolean) {
