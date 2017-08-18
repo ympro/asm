@@ -114,6 +114,6 @@ public final class Condy {
     
     @Override
     public String toString() {
-        return name + desc + ' ' + bsm + ' ' + Arrays.toString(bsmArgs);
+        return name + " : " + desc + ' ' + bsm + ' ' + Arrays.toString(bsmArgs);
     }
 }
