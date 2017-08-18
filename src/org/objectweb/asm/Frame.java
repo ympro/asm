@@ -1023,7 +1023,7 @@ class Frame {
                 push(OBJECT | cw.addType("java/lang/invoke/MethodType"));
                 break;
             case ClassWriter.CONDY:
-                push(OBJECT | cw.addType(item.strVal2));
+                push(cw, item.strVal2);
                 break;
             // case ClassWriter.HANDLE_BASE + [1..9]:
             default:
