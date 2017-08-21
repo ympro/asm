@@ -104,6 +104,12 @@ public class ClassNode extends ClassVisitor {
     public ModuleNode module;
     
     /**
+     * The internal name of the nest host class. May be
+     * <tt>null</tt>, if the class is it's own nest.
+     */
+    public String nestHostClass;
+    
+    /**
      * The internal name of the enclosing class of the class. May be
      * <tt>null</tt>.
      */
@@ -166,13 +172,19 @@ public class ClassNode extends ClassVisitor {
     public List<Attribute> attrs;
 
     /**
+     * Internal names the nest members of this class. This list is a list
+     * of {@link String} objects. May be <tt>null</tt>.
+     */
+    public List<String> nestMembers;
+    
+    /**
      * Informations about the inner classes of this class. This list is a list
      * of {@link InnerClassNode} objects.
      * 
      * @associates org.objectweb.asm.tree.InnerClassNode
      */
     public List<InnerClassNode> innerClasses;
-
+    
     /**
      * The fields of this class. This list is a list of {@link FieldNode}
      * objects.
@@ -250,6 +262,11 @@ public class ClassNode extends ClassVisitor {
     }
 
     @Override
+    public void visitMemberOfNest(final String hostClass) {
+        this.nestHostClass = hostClass;
+    }
+    
+    @Override
     public void visitOuterClass(final String owner, final String name,
             final String desc) {
         outerClass = owner;
@@ -301,6 +318,14 @@ public class ClassNode extends ClassVisitor {
         attrs.add(attr);
     }
 
+    @Override
+    public void visitNestMember(final String name) {
+        if (nestMembers == null) {
+            this.nestMembers = new ArrayList<String>();
+        }
+        nestMembers.add(name);
+    }
+    
     @Override
     public void visitInnerClass(final String name, final String outerName,
             final String innerName, final int access) {
@@ -406,6 +431,10 @@ public class ClassNode extends ClassVisitor {
         if (module != null) {
             module.accept(cv);
         }
+        // visit nest host
+        if (nestHostClass != null) {
+            cv.visitMemberOfNest(nestHostClass);
+        }
         // visits outer class
         if (outerClass != null) {
             cv.visitOuterClass(outerClass, outerMethod, outerMethodDesc);
@@ -438,6 +467,12 @@ public class ClassNode extends ClassVisitor {
         n = attrs == null ? 0 : attrs.size();
         for (i = 0; i < n; ++i) {
             cv.visitAttribute(attrs.get(i));
+        }
+        // visit nest members
+        if (nestMembers != null) {
+            for (i = 0; i < nestMembers.size(); ++i) {
+                cv.visitNestMember(nestMembers.get(i));
+            }
         }
         // visits inner classes
         for (i = 0; i < innerClasses.size(); ++i) {

@@ -126,6 +126,16 @@ public class ClassRemapper extends ClassVisitor {
     }
 
     @Override
+    public void visitMemberOfNest(String hostClass) {
+        super.visitMemberOfNest(remapper.mapType(hostClass));
+    }
+    
+    @Override
+    public void visitNestMember(String name) {
+        super.visitNestMember(remapper.mapType(name));
+    }
+    
+    @Override
     public void visitInnerClass(String name, String outerName,
             String innerName, int access) {
         // TODO should innerName be changed?

@@ -113,6 +113,16 @@ public class RemappingClassAdapter extends ClassVisitor {
     }
 
     @Override
+    public void visitMemberOfNest(String hostClass) {
+        throw new RuntimeException("RemappingClassAdapter is deprecated, use ClassRemapper instead");
+    }
+    
+    @Override
+    public void visitNestMember(String name) {
+        throw new RuntimeException("RemappingClassAdapter is deprecated, use ClassRemapper instead");
+    }
+    
+    @Override
     public void visitInnerClass(String name, String outerName,
             String innerName, int access) {
         // TODO should innerName be changed?

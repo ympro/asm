@@ -160,6 +160,12 @@ public final class TraceClassVisitor extends ClassVisitor {
     }
 
     @Override
+    public void visitMemberOfNest(final String hostClass) {
+        p.visitMemberOfNest(hostClass);
+        super.visitMemberOfNest(hostClass);
+    }
+    
+    @Override
     public void visitOuterClass(final String owner, final String name,
             final String desc) {
         p.visitOuterClass(owner, name, desc);
@@ -191,6 +197,12 @@ public final class TraceClassVisitor extends ClassVisitor {
         super.visitAttribute(attr);
     }
 
+    @Override
+    public void visitNestMember(final String name) {
+        p.visitNestMember(name);
+        super.visitNestMember(name);
+    }
+    
     @Override
     public void visitInnerClass(final String name, final String outerName,
             final String innerName, final int access) {

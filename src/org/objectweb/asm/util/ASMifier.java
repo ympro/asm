@@ -280,6 +280,15 @@ public class ASMifier extends Printer {
     }
 
     @Override
+    public void visitMemberOfNest(final String hostClass) {
+        buf.setLength(0);
+        buf.append("cw.visitMemberOfNest(");
+        appendConstant(hostClass);
+        buf.append(");\n\n");
+        text.add(buf.toString());
+    }
+    
+    @Override
     public void visitOuterClass(final String owner, final String name,
             final String desc) {
         buf.setLength(0);
@@ -311,6 +320,15 @@ public class ASMifier extends Printer {
     }
 
     @Override
+    public void visitNestMember(final String name) {
+        buf.setLength(0);
+        buf.append("cw.visitNestMember(");
+        appendConstant(name);
+        buf.append(");\n\n");
+        text.add(buf.toString());
+    }
+    
+    @Override
     public void visitInnerClass(final String name, final String outerName,
             final String innerName, final int access) {
         buf.setLength(0);
@@ -325,7 +343,7 @@ public class ASMifier extends Printer {
         buf.append(");\n\n");
         text.add(buf.toString());
     }
-
+    
     @Override
     public ASMifier visitField(final int access, final String name,
             final String desc, final String signature, final Object value) {

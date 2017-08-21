@@ -575,6 +575,7 @@ public class ClassReader {
         String enclosingName = null;
         String enclosingDesc = null;
         String moduleMainClass = null;
+        String nestHostClass = null;
         int anns = 0;
         int ianns = 0;
         int tanns = 0;
@@ -582,6 +583,7 @@ public class ClassReader {
         int innerClasses = 0;
         int module = 0;
         int packages = 0;
+        int nestMembers = 0;
         Attribute attributes = null;
 
         u = getAttributes();
@@ -600,6 +602,10 @@ public class ClassReader {
                     enclosingName = readUTF8(items[item], c);
                     enclosingDesc = readUTF8(items[item] + 2, c);
                 }
+            } else if ("MemberOfNest".equals(attrName)) {
+                nestHostClass = readClass(u + 8, c);
+            } else if ("NestMembers".equals(attrName)) {
+                nestMembers = u + 8;
             } else if (SIGNATURES && "Signature".equals(attrName)) {
                 signature = readUTF8(u + 8, c);
             } else if (ANNOTATIONS
@@ -662,6 +668,11 @@ public class ClassReader {
                     moduleMainClass, packages);
         }
         
+        // visit member of nest
+        if (nestHostClass != null) {
+            classVisitor.visitMemberOfNest(nestHostClass);
+        }
+        
         // visits the outer class
         if (enclosingOwner != null) {
             classVisitor.visitOuterClass(enclosingOwner, enclosingName,
@@ -706,6 +717,15 @@ public class ClassReader {
             attributes = attr;
         }
 
+        // visit nest members
+        if (nestMembers != 0) {
+            int v = nestMembers + 2;
+            for (int i = readUnsignedShort(nestMembers); i > 0; --i) {
+                classVisitor.visitNestMember(readClass(v, c));
+                v += 2;
+            }
+        }
+        
         // visits the inner classes
         if (innerClasses != 0) {
             int v = innerClasses + 2;

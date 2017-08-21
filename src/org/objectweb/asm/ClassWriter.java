@@ -431,6 +431,12 @@ public class ClassWriter extends ClassVisitor {
     private ModuleWriter moduleWriter;
     
     /**
+     * The constant pool item that contains the nest host class of
+     * this class.
+     */
+    private int nestHostClass;
+    
+    /**
      * The constant pool item that contains the name of the enclosing class of
      * this class.
      */
@@ -467,6 +473,16 @@ public class ClassWriter extends ClassVisitor {
      */
     private Attribute attrs;
 
+    /**
+     * The number of entries in the NestMembers attribute.
+     */
+    private int nestMembersCount;
+
+    /**
+     * The NestMembers attribute.
+     */
+    private ByteVector nestMembers;
+    
     /**
      * The number of entries in the InnerClasses attribute.
      */
@@ -733,6 +749,11 @@ public class ClassWriter extends ClassVisitor {
     }
     
     @Override
+    public void visitMemberOfNest(final String hostClass) {
+        nestHostClass = newClass(hostClass);
+    }
+    
+    @Override
     public final void visitOuterClass(final String owner, final String name,
             final String desc) {
         enclosingMethodOwner = newClass(owner);
@@ -790,6 +811,15 @@ public class ClassWriter extends ClassVisitor {
         attrs = attr;
     }
 
+    @Override
+    public void visitNestMember(final String name) {
+        if (nestMembers == null) {
+            nestMembers = new ByteVector();
+        }
+        ++nestMembersCount;
+        nestMembers.putShort(newStringishItem(CLASS, name).index);
+    }
+    
     @Override
     public final void visitInnerClass(final String name,
             final String outerName, final String innerName, final int access) {
@@ -890,6 +920,11 @@ public class ClassWriter extends ClassVisitor {
             size += sourceDebug.length + 6;
             newUTF8("SourceDebugExtension");
         }
+        if (nestHostClass != 0) {
+            ++attributeCount;
+            size += 8;
+            newUTF8("MemberOfNest");
+        }
         if (enclosingMethodOwner != 0) {
             ++attributeCount;
             size += 10;
@@ -907,6 +942,11 @@ public class ClassWriter extends ClassVisitor {
                 size += 6;
                 newUTF8("Synthetic");
             }
+        }
+        if (nestMembers != null) {
+            ++attributeCount;
+            size += 8 + nestMembers.length;
+            newUTF8("NestMembers");
         }
         if (innerClasses != null) {
             ++attributeCount;
@@ -990,6 +1030,9 @@ public class ClassWriter extends ClassVisitor {
             moduleWriter.put(out);
             moduleWriter.putAttributes(out);
         }
+        if (nestHostClass != 0) {
+            out.putShort(newUTF8("MemberOfNest")).putInt(2).putShort(nestHostClass);
+        }
         if (enclosingMethodOwner != 0) {
             out.putShort(newUTF8("EnclosingMethod")).putInt(4);
             out.putShort(enclosingMethodOwner).putShort(enclosingMethod);
@@ -1002,6 +1045,11 @@ public class ClassWriter extends ClassVisitor {
                     || (access & ACC_SYNTHETIC_ATTRIBUTE) != 0) {
                 out.putShort(newUTF8("Synthetic")).putInt(0);
             }
+        }
+        if (nestMembers != null) {
+            out.putShort(newUTF8("NestMembers"));
+            out.putInt(nestMembers.length + 2).putShort(nestMembersCount);
+            out.putByteArray(nestMembers.data, 0, nestMembers.length);
         }
         if (innerClasses != null) {
             out.putShort(newUTF8("InnerClasses"));

@@ -143,6 +143,17 @@ public class CheckClassAdapter extends ClassVisitor {
     private boolean source;
 
     /**
+     * <tt>true</tt> if the visitMemberOfNest method has been called.
+     */
+    private boolean memberOfNest;
+    
+    /**
+     * Package of all nest members.
+     * Not <tt>null</tt> if the visitNestMember method has been called.
+     */
+    private String nestMemberPackageName;
+    
+    /**
      * <tt>true</tt> if the visitOuterClass method has been called.
      */
     private boolean outer;
@@ -444,6 +455,42 @@ public class CheckClassAdapter extends ClassVisitor {
         checkAccess(access, Opcodes.ACC_OPEN | Opcodes.ACC_SYNTHETIC);
         return new CheckModuleAdapter(super.visitModule(name, access, version), 
             (access | Opcodes.ACC_OPEN) != 0);
+    }
+    
+    @Override
+    public void visitMemberOfNest(final String hostClass) {
+        checkState();
+        CheckMethodAdapter.checkInternalName(hostClass, "hostClass");
+        if (memberOfNest) {
+            throw new IllegalStateException(
+                    "visitMemberOfNest can be called only once.");
+        }
+        if (nestMemberPackageName != null) {
+            throw new IllegalStateException(
+                    "visitMemberOfNestand and visitNestMember are mutually exclusive.");
+        }
+        memberOfNest = true;
+        super.visitMemberOfNest(hostClass);
+    }
+    
+    @Override
+    public void visitNestMember(final String name) {
+        checkState();
+        CheckMethodAdapter.checkInternalName(name, "name");
+        if (memberOfNest) {
+            throw new IllegalStateException(
+                    "visitMemberOfNestand and visitNestMember are mutually exclusive.");
+        }
+        String packageName = packageName(name);
+        if (nestMemberPackageName == null) {
+            nestMemberPackageName = packageName;
+        } else {
+            if (!nestMemberPackageName.equals(packageName)) {
+                throw new IllegalStateException(
+                        "nest members should be in the same package.");
+            }
+        }
+        super.visitNestMember(name);
     }
     
     @Override
@@ -1031,5 +1078,18 @@ public class CheckClassAdapter extends ClassVisitor {
      */
     private static char getChar(final String signature, int pos) {
         return pos < signature.length() ? signature.charAt(pos) : (char) 0;
+    }
+    
+    /**
+     * Returns the package name of an internal name.
+     * @param name an internal name.
+     * @return the package name or "" if there is no package
+     */
+    private static String packageName(String name) {
+        int index = name.lastIndexOf('/');
+        if (index == -1) {
+            return "";
+        }
+        return name.substring(0, index);
     }
 }

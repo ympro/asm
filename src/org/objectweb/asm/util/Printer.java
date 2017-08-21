@@ -37,6 +37,7 @@ import org.objectweb.asm.Attribute;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 
 /**
@@ -216,6 +217,25 @@ public abstract class Printer {
     }
     
     /**
+     * Nest host class.
+     * See {@link org.objectweb.asm.ClassVisitor#visitMemberOfNest}.
+     * 
+     * Visits the nest host class of the current class.
+     * A nest is a set of classes of the same package that share access to their private members.
+     * The host class should list the current class as {@link #visitNestMember(String) nest member}.
+     * This method must be called only once and only if the current class is a member of a nest. 
+     * A class is implicitly its own nest, so it's invalid to call this method with the
+     * current class as argument.
+     *  
+     * @param hostClass
+     *            the internal name of the host class of the nest (see
+     *            {@link Type#getInternalName() getInternalName}).
+     */
+    public void visitMemberOfNest(final String hostClass) {
+        throw new RuntimeException("Must be overriden");
+    }
+    
+    /**
      * Class outer class.
      * See {@link org.objectweb.asm.ClassVisitor#visitOuterClass}.
      *
@@ -284,6 +304,21 @@ public abstract class Printer {
      */
     public abstract void visitClassAttribute(final Attribute attr);
 
+    /**
+     * Nest member name.
+     * See {@link org.objectweb.asm.ClassVisitor#visitNestMember}.
+     * 
+     * * Visits a member of the nest.
+     * A nest is a set of classes of the same package that share access to their private members.
+     * The nest member should declare the current class as its {@link #visitNestMember(String) host class}.
+     * 
+     * @param name the internal name of a nest member (see
+     *            {@link Type#getInternalName() getInternalName}).
+     */
+    public void visitNestMember(final String name) {
+        throw new RuntimeException("Must be overriden");
+    }
+    
     /**
      * Class inner name.
      * See {@link org.objectweb.asm.ClassVisitor#visitInnerClass}.

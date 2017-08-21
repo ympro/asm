@@ -102,6 +102,13 @@ public class ClassConstantsCollector extends ClassVisitor {
     }
     
     @Override
+    public void visitMemberOfNest(final String hostClass) {
+        cp.newUTF8("MemberOfNest");
+        cp.newClass(hostClass);
+        cv.visitMemberOfNest(hostClass);
+    }
+    
+    @Override
     public void visitOuterClass(final String owner, final String name,
             final String desc) {
         cp.newUTF8("EnclosingMethod");
@@ -144,6 +151,13 @@ public class ClassConstantsCollector extends ClassVisitor {
         cv.visitAttribute(attr);
     }
 
+    @Override
+    public void visitNestMember(final String name) {
+        cp.newUTF8("NestMember");
+        cp.newClass(name);
+        cv.visitNestMember(name);
+    }
+    
     @Override
     public void visitInnerClass(final String name, final String outerName,
             final String innerName, final int access) {
