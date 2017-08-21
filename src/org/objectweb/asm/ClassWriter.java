@@ -812,12 +812,12 @@ public class ClassWriter extends ClassVisitor {
     }
 
     @Override
-    public void visitNestMember(final String name) {
+    public void visitNestMember(final String member) {
         if (nestMembers == null) {
             nestMembers = new ByteVector();
         }
         ++nestMembersCount;
-        nestMembers.putShort(newStringishItem(CLASS, name).index);
+        nestMembers.putShort(newStringishItem(CLASS, member).index);
     }
     
     @Override

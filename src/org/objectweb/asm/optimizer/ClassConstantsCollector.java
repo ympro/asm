@@ -152,10 +152,10 @@ public class ClassConstantsCollector extends ClassVisitor {
     }
 
     @Override
-    public void visitNestMember(final String name) {
+    public void visitNestMember(final String member) {
         cp.newUTF8("NestMember");
-        cp.newClass(name);
-        cv.visitNestMember(name);
+        cp.newClass(member);
+        cv.visitNestMember(member);
     }
     
     @Override

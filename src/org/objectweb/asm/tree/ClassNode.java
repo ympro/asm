@@ -319,11 +319,11 @@ public class ClassNode extends ClassVisitor {
     }
 
     @Override
-    public void visitNestMember(final String name) {
+    public void visitNestMember(final String member) {
         if (nestMembers == null) {
             this.nestMembers = new ArrayList<String>();
         }
-        nestMembers.add(name);
+        nestMembers.add(member);
     }
     
     @Override

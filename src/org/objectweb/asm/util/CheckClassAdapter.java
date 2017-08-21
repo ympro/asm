@@ -474,14 +474,14 @@ public class CheckClassAdapter extends ClassVisitor {
     }
     
     @Override
-    public void visitNestMember(final String name) {
+    public void visitNestMember(final String member) {
         checkState();
-        CheckMethodAdapter.checkInternalName(name, "name");
+        CheckMethodAdapter.checkInternalName(member, "member");
         if (memberOfNest) {
             throw new IllegalStateException(
                     "visitMemberOfNestand and visitNestMember are mutually exclusive.");
         }
-        String packageName = packageName(name);
+        String packageName = packageName(member);
         if (nestMemberPackageName == null) {
             nestMemberPackageName = packageName;
         } else {
@@ -490,7 +490,7 @@ public class CheckClassAdapter extends ClassVisitor {
                         "nest members should be in the same package.");
             }
         }
-        super.visitNestMember(name);
+        super.visitNestMember(member);
     }
     
     @Override

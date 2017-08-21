@@ -32,8 +32,9 @@ package org.objectweb.asm;
 /**
  * A visitor to visit a Java class. The methods of this class must be called in
  * the following order: <tt>visit</tt> [ <tt>visitSource</tt> ] [
- * <tt>visitModule</tt> ][ <tt>visitOuterClass</tt> ] ( <tt>visitAnnotation</tt> |
- * <tt>visitTypeAnnotation</tt> | <tt>visitAttribute</tt> )* (
+ * <tt>visitModule</tt> ][ <tt>visitMemberOfNest</tt> ][ <tt>visitOuterClass</tt> ]
+ * ( <tt>visitAnnotation</tt> | <tt>visitTypeAnnotation</tt> |
+ * <tt>visitAttribute</tt> )* ( <tt>visitNestMember</tt> |
  * <tt>visitInnerClass</tt> | <tt>visitField</tt> | <tt>visitMethod</tt> )*
  * <tt>visitEnd</tt>.
  * 
@@ -260,12 +261,12 @@ public abstract class ClassVisitor {
      * A nest is a set of classes of the same package that share access to their private members.
      * The nest member should declare the current class as its {@link #visitNestMember(String) host class}.
      * 
-     * @param name the internal name of a nest member (see
+     * @param member the internal name of a nest member (see
      *            {@link Type#getInternalName() getInternalName}).
      */
-    public void visitNestMember(String name) {
+    public void visitNestMember(String member) {
         if (cv != null) {
-            cv.visitNestMember(name);
+            cv.visitNestMember(member);
         }
     }
     

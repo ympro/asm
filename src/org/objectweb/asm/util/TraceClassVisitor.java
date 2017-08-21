@@ -198,9 +198,9 @@ public final class TraceClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public void visitNestMember(final String name) {
-        p.visitNestMember(name);
-        super.visitNestMember(name);
+    public void visitNestMember(final String member) {
+        p.visitNestMember(member);
+        super.visitNestMember(member);
     }
     
     @Override

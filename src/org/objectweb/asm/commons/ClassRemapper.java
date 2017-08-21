@@ -131,8 +131,8 @@ public class ClassRemapper extends ClassVisitor {
     }
     
     @Override
-    public void visitNestMember(String name) {
-        super.visitNestMember(remapper.mapType(name));
+    public void visitNestMember(String member) {
+        super.visitNestMember(remapper.mapType(member));
     }
     
     @Override

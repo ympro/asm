@@ -118,7 +118,7 @@ public class RemappingClassAdapter extends ClassVisitor {
     }
     
     @Override
-    public void visitNestMember(String name) {
+    public void visitNestMember(String member) {
         throw new RuntimeException("RemappingClassAdapter is deprecated, use ClassRemapper instead");
     }
     
