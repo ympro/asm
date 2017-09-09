@@ -1037,8 +1037,6 @@ public class ClassWriter extends ClassVisitor {
             ianns = null;
             attrs = null;
             moduleWriter = null;
-            innerClassesCount = 0;
-            innerClasses = null;
             firstField = null;
             lastField = null;
             firstMethod = null;
